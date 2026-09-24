@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Print Token Receipt #{{ booking.token_number }} — KisanSetu Desk{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-4">
+
+    <!-- Top Action Bar -->
+    <div class="flex items-center justify-between mb-4 no-print">
+        <div class="flex items-center space-x-3">
+            <a href="{{ url_for('operator.dashboard') }}" class="text-xs font-bold text-stone-500 hover:text-stone-800">
+                ← Operator Desk
+            </a>
+            <a href="{{ url_for('operator.queue') }}" class="text-xs font-bold text-agri-700 hover:underline">
+                View in Live Queue →
+            </a>
+        </div>
+        <button onclick="window.print()" class="px-4 py-2 rounded-xl bg-agri-700 hover:bg-agri-600 text-white font-bold text-xs shadow-sm flex items-center space-x-1 transition">
+            <span>🖨️ Print Slip for Farmer / पर्ची प्रिंट करें</span>
+        </button>
+    </div>
+
+    <!-- Printable Card -->
+    <div id="printable-token" class="bg-white rounded-3xl p-8 border-2 border-agri-700 shadow-lg relative">
+        <div class="border-b-2 border-stone-800 pb-4 mb-6 text-center">
+            <div class="flex items-center justify-center space-x-2 mb-1">
+                <span class="text-2xl">🌾</span>
+                <span class="text-xl font-black text-agri-900">KisanSetu / किसान सेतु</span>
+            </div>
+            <p class="text-xs font-bold uppercase tracking-widest text-stone-600">
+                Procurement Gate Token Receipt / खरीद केंद्र प्रवेश टोकन पर्ची
+            </p>
+            <p class="text-[11px] text-stone-400">
+                Assisted Helpdesk Issuance • SIH Prototype Simulation
+            </p>
+        </div>
+
+        <div class="bg-agri-50 border-2 border-dashed border-agri-600 rounded-2xl p-6 text-center mb-6">
+            <span class="text-xs font-bold uppercase tracking-wider text-agri-800">Assigned Token Number / टोकन नंबर</span>
+            <div class="text-6xl font-black text-agri-800 my-1">
+                #{{ booking.token_number }}
+            </div>
+            <p class="text-xs font-bold text-stone-700 mt-1">
+                {{ booking.centre.name }}
+            </p>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 text-xs py-4 border-t border-b border-stone-200">
+            <div>
+                <span class="text-stone-400 uppercase font-bold block">Farmer Name</span>
+                <span class="font-bold text-stone-900 text-sm">{{ booking.farmer.full_name }}</span>
+            </div>
+            <div>
+                <span class="text-stone-400 uppercase font-bold block">Mobile</span>
+                <span class="font-mono text-stone-800">{{ booking.farmer.mobile }}</span>
+            </div>
+            <div>
+                <span class="text-stone-400 uppercase font-bold block">Procurement Date</span>
+                <span class="font-bold text-agri-800 text-sm">{{ booking.slot.slot_date.strftime('%d %B %Y') }}</span>
+            </div>
+            <div>
+                <span class="text-stone-400 uppercase font-bold block">Arrival Window</span>
+                <span class="font-bold text-agri-800 text-sm">{{ booking.slot.time_range_formatted }}</span>
+            </div>
+            <div>
+                <span class="text-stone-400 uppercase font-bold block">Crop Type</span>
+                <span class="font-semibold text-stone-800">{{ booking.crop_type }}</span>
+            </div>
+            <div>
+                <span class="text-stone-400 uppercase font-bold block">Estimated Quantity</span>
+                <span class="font-semibold text-stone-800">{{ booking.estimated_quantity }} Quintals</span>
+            </div>
+        </div>
+
+        <div class="mt-6 text-xs text-stone-600 space-y-1">
+            <p><strong>Issued by Operator Desk:</strong> Operator ID #{{ current_user.id }} ({{ current_user.name }})</p>
+            <p><strong>SMS Status:</strong> Simulated confirmation message dispatched to {{ booking.farmer.mobile }}.</p>
+        </div>
+
+        <div class="mt-8 pt-4 border-t border-stone-200 text-center text-[10px] text-stone-400">
+            Keep this slip safely. Show this token number at the weighbridge.
+        </div>
+    </div>
+
+</div>
+{% endblock %}

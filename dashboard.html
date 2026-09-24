@@ -1,0 +1,259 @@
+{% extends 'base.html' %}
+
+{% block title %}Farmer Dashboard — KisanSetu{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+    <!-- Welcome Banner & Quick Action Bar -->
+    <div class="bg-gradient-to-r from-agri-800 to-agri-700 text-white rounded-3xl p-6 sm:p-8 shadow-md border border-agri-600 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+            <div class="flex items-center space-x-3 mb-2">
+                <span class="text-3xl">👨‍🌾</span>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold">{{ farmer.full_name }}</h1>
+                    <p class="text-xs text-agri-200">
+                        {{ farmer.village }}, {{ farmer.district }}, {{ farmer.state }} | Mobile: {{ farmer.mobile }}
+                    </p>
+                </div>
+            </div>
+            <p class="text-xs text-agri-100 mt-2">
+                Primary Crop: <strong class="text-white">{{ farmer.crop_type }}</strong> | Land: <strong class="text-white">{{ farmer.land_area }} Acres</strong>
+            </p>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+            <a href="{{ url_for('farmer.book_slot') }}" class="px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-agri-950 font-bold text-sm shadow-md transition duration-150 flex items-center space-x-2">
+                <span>📅 Book Slot / स्लॉट बुक करें</span>
+            </a>
+            <a href="{{ url_for('farmer.bookings') }}" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm border border-white/20 transition duration-150">
+                My Bookings / मेरी बुकिंग
+            </a>
+            <a href="{{ url_for('farmer.sms_inbox') }}" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium text-sm border border-white/20 transition duration-150">
+                SMS Inbox
+            </a>
+        </div>
+    </div>
+
+    <!-- Top Metric Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        
+        <!-- 1. Identity Status -->
+        <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-wider text-stone-500">Identity Status</p>
+                <div class="mt-2">
+                    {% if farmer.identity_status == 'Verified (Demo)' %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            ✓ Verified (Demo) / सत्यापित
+                        </span>
+                    {% elif farmer.identity_status == 'Failed (Demo)' %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                            ✕ Failed (Demo)
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                            ⏳ Pending / लंबित
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-stone-100">
+                {% if farmer.identity_status != 'Verified (Demo)' %}
+                    <form method="POST" action="{{ url_for('farmer.verify_identity') }}">
+                        <button type="submit" class="w-full py-2 px-3 rounded-lg bg-agri-700 hover:bg-agri-600 text-white text-xs font-bold transition shadow-sm">
+                            Verify Identity (Demo) / सत्यापन करें
+                        </button>
+                    </form>
+                {% else %}
+                    <p class="text-[11px] text-stone-400">UIDAI Mock: DEMO-FARMER-{{ "%04d"|format(farmer.id) }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 2. Active Token -->
+        <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-wider text-stone-500">Current Token / टोकन</p>
+                <h3 class="text-3xl font-black text-agri-800 mt-2">
+                    {% if active_booking %}
+                        #{{ active_booking.token_number }}
+                    {% else %}
+                        <span class="text-stone-300 text-xl font-normal">None</span>
+                    {% endif %}
+                </h3>
+            </div>
+            <div class="mt-4 pt-3 border-t border-stone-100 text-xs text-stone-500">
+                {% if active_booking %}
+                    Status: <span class="font-bold text-stone-800">{{ active_booking.booking_status }}</span>
+                {% else %}
+                    No active tokens today
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 3. Total Bookings -->
+        <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-wider text-stone-500">Completed Procurements</p>
+                <h3 class="text-3xl font-black text-emerald-700 mt-2">{{ completed_bookings }} / {{ total_bookings }}</h3>
+            </div>
+            <div class="mt-4 pt-3 border-t border-stone-100 text-xs text-stone-500">
+                Total lifetime bookings made
+            </div>
+        </div>
+
+        <!-- 4. Payment Status -->
+        <div class="bg-white p-5 rounded-2xl border border-stone-200 shadow-sm flex flex-col justify-between">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-wider text-stone-500">Latest Payment / भुगतान</p>
+                <div class="mt-2">
+                    {% if latest_payment %}
+                        <span class="text-xl font-black text-stone-900">₹{{ "{:,.2f}".format(latest_payment.amount) }}</span>
+                        <div class="text-[11px] font-semibold mt-1 {% if latest_payment.payment_status == 'Transferred (Demo)' %}text-emerald-600{% else %}text-amber-600{% endif %}">
+                            {{ latest_payment.payment_status }}
+                        </div>
+                    {% else %}
+                        <span class="text-stone-400 text-sm">No payment records</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-stone-100 text-[11px] text-stone-400">
+                Direct bank transfer simulation
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Active Upcoming Slot Detail Card -->
+    {% if active_booking %}
+    <div class="bg-white rounded-3xl p-6 sm:p-8 border-2 border-agri-600 shadow-md">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-stone-200">
+            <div>
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-agri-100 text-agri-800 border border-agri-300">
+                    Upcoming Procurement Slot / आगामी खरीद स्लॉट
+                </span>
+                <h2 class="text-2xl font-bold text-stone-900 mt-2">
+                    {{ active_booking.centre.name }}
+                </h2>
+                <p class="text-xs text-stone-500">
+                    Location: {{ active_booking.centre.location }}, {{ active_booking.centre.district }}
+                </p>
+            </div>
+            
+            <div class="text-right flex flex-col items-start md:items-end">
+                <span class="text-xs font-bold uppercase tracking-wider text-stone-400">Your Token Number</span>
+                <span class="text-4xl font-black text-agri-800">#{{ active_booking.token_number }}</span>
+                <span class="mt-1 px-3 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-900">
+                    Status: {{ active_booking.booking_status }}
+                </span>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 py-6 text-sm">
+            <div>
+                <p class="text-xs text-stone-500 uppercase font-semibold">Date / तारीख</p>
+                <p class="font-bold text-stone-800 mt-0.5">{{ active_booking.slot.slot_date.strftime('%d %B %Y') }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-stone-500 uppercase font-semibold">Time Window / समय</p>
+                <p class="font-bold text-stone-800 mt-0.5">{{ active_booking.slot.time_range_formatted }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-stone-500 uppercase font-semibold">Crop / फसल</p>
+                <p class="font-bold text-stone-800 mt-0.5">{{ active_booking.crop_type }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-stone-500 uppercase font-semibold">Est. Quantity / मात्रा</p>
+                <p class="font-bold text-stone-800 mt-0.5">{{ active_booking.estimated_quantity }} Quintals (कुंतल)</p>
+            </div>
+        </div>
+
+        <div class="pt-4 border-t border-stone-200 flex flex-wrap items-center justify-between gap-3">
+            <div class="text-xs text-stone-500">
+                Arrive 15 minutes before your time window with your crop for moisture &amp; grade inspection.
+            </div>
+            <div class="flex space-x-3">
+                <a href="{{ url_for('farmer.booking_detail', booking_id=active_booking.id) }}" class="px-4 py-2 rounded-xl bg-agri-700 hover:bg-agri-600 text-white text-xs font-bold shadow-sm transition">
+                    View &amp; Print Token Slip / टोकन पर्ची देखें
+                </a>
+                {% if active_booking.can_be_cancelled %}
+                    <form method="POST" action="{{ url_for('farmer.cancel_booking', booking_id=active_booking.id) }}" onsubmit="return confirm('Are you sure you want to cancel this slot booking?');">
+                        <button type="submit" class="px-4 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition">
+                            Cancel Booking / रद्द करें
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent SMS Notifications & Important Instructions -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- SMS Box -->
+        <div class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-base font-bold text-stone-900 flex items-center gap-2">
+                    <span>📱</span>
+                    <span>SMS Alerts / हालिया एसएमएस</span>
+                </h3>
+                <a href="{{ url_for('farmer.sms_inbox') }}" class="text-xs font-bold text-agri-700 hover:underline">
+                    View All →
+                </a>
+            </div>
+
+            {% if recent_sms %}
+                <div class="space-y-3">
+                    {% for sms in recent_sms %}
+                        <div class="p-3.5 rounded-xl bg-stone-50 border border-stone-200 text-xs">
+                            <div class="flex items-center justify-between text-stone-500 mb-1">
+                                <span class="font-medium text-[11px]">{{ sms.created_at.strftime('%d %b %Y, %I:%M %p') }}</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold {% if sms.status == 'Delivered' %}bg-emerald-100 text-emerald-800{% else %}bg-amber-100 text-amber-800{% endif %}">
+                                    {{ sms.status }}
+                                </span>
+                            </div>
+                            <p class="text-stone-800 leading-relaxed font-sans">{{ sms.message }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-xs text-stone-400 py-6 text-center">No SMS notifications received yet.</p>
+            {% endif %}
+        </div>
+
+        <!-- Procurement Rules & Guidelines -->
+        <div class="bg-white rounded-2xl p-6 border border-stone-200 shadow-sm">
+            <h3 class="text-base font-bold text-stone-900 mb-3 flex items-center gap-2">
+                <span>📋</span>
+                <span>Mandatory Checklist for Mandi Visit</span>
+            </h3>
+            <ul class="space-y-2 text-xs text-stone-600 leading-relaxed">
+                <li class="flex items-start gap-2">
+                    <span class="text-emerald-600 font-bold">✓</span>
+                    <span><strong>Token Slip:</strong> Bring your printed token number or SMS on your mobile phone.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-emerald-600 font-bold">✓</span>
+                    <span><strong>Identification:</strong> Carry original identification document and Bank Passbook copy.</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-emerald-600 font-bold">✓</span>
+                    <span><strong>Moisture Standards:</strong> Ensure grain moisture is within prescribed government limits (e.g. max 17% for Paddy).</span>
+                </li>
+                <li class="flex items-start gap-2">
+                    <span class="text-emerald-600 font-bold">✓</span>
+                    <span><strong>Assistance Available:</strong> Walk to the Mandi Operator Desk if you need assistance at any step.</span>
+                </li>
+            </ul>
+
+            <div class="mt-5 p-3 rounded-xl bg-agri-50 border border-agri-200 text-xs text-agri-900">
+                <span class="font-bold">Kisan Helpdesk Helpline:</span> 1800-DEMO-AGRI (Toll Free, 7 AM - 7 PM)
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

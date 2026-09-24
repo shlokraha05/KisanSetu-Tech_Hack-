@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Farmer — KisanSetu Operator Desk{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto py-4 space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-stone-900">Farmer Lookup / किसान खोजें</h1>
+            <p class="text-xs text-stone-500 mt-0.5">Search farmer records by mobile number, name, or village.</p>
+        </div>
+        <a href="{{ url_for('operator.register_farmer') }}" class="px-4 py-2 rounded-xl bg-agri-700 text-white font-bold text-xs hover:bg-agri-600 transition shadow-sm">
+            + New Farmer Registration
+        </a>
+    </div>
+
+    <!-- Search Box -->
+    <div class="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm">
+        <form method="GET" action="{{ url_for('operator.search_farmer') }}" class="flex gap-3">
+            <input 
+                type="text" 
+                name="q" 
+                value="{{ query }}" 
+                placeholder="Search by 10-digit mobile number or farmer name..."
+                class="flex-grow px-4 py-3 rounded-xl border border-stone-300 focus:outline-none focus:ring-2 focus:ring-agri-600 text-sm"
+                autofocus
+            >
+            <button type="submit" class="px-6 py-3 rounded-xl bg-agri-700 hover:bg-agri-600 text-white font-bold text-sm transition">
+                Search / खोजें
+            </button>
+        </form>
+    </div>
+
+    <!-- Results Table -->
+    {% if query %}
+    <div class="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
+        <div class="p-4 bg-stone-50 border-b border-stone-200 flex items-center justify-between">
+            <span class="text-xs font-bold text-stone-700 uppercase tracking-wider">
+                Matching Farmers found for "{{ query }}"
+            </span>
+            <span class="text-xs text-stone-500">{{ farmers|length }} results</span>
+        </div>
+
+        {% if farmers %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-stone-200 text-sm">
+                <thead class="bg-stone-50/50 text-stone-500 text-xs uppercase font-bold text-left">
+                    <tr>
+                        <th class="px-6 py-3">Farmer</th>
+                        <th class="px-6 py-3">Location</th>
+                        <th class="px-6 py-3">Crop &amp; Land</th>
+                        <th class="px-6 py-3">Identity Status</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-200 text-stone-700">
+                    {% for f in farmers %}
+                    <tr class="hover:bg-stone-50/80 transition">
+                        <td class="px-6 py-4">
+                            <span class="font-bold text-stone-900 block text-base">{{ f.full_name }}</span>
+                            <span class="text-xs text-stone-500 font-mono">📱 {{ f.mobile }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-xs">
+                            <span class="font-semibold text-stone-800">{{ f.village }}</span><br>
+                            <span class="text-stone-500">{{ f.district }}, {{ f.state }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-xs">
+                            <span class="font-bold text-agri-800">{{ f.crop_type }}</span><br>
+                            <span class="text-stone-500">{{ f.land_area }} Acres</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-bold 
+                                {% if f.identity_status == 'Verified (Demo)' %}bg-emerald-100 text-emerald-800
+                                {% elif f.identity_status == 'Failed (Demo)' %}bg-rose-100 text-rose-800
+                                {% else %}bg-amber-100 text-amber-800{% endif %}">
+                                {{ f.identity_status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right whitespace-nowrap text-xs">
+                            <div class="flex items-center justify-end space-x-2">
+                                {% if f.identity_status != 'Verified (Demo)' %}
+                                <form method="POST" action="{{ url_for('operator.verify_farmer') }}" class="inline">
+                                    <input type="hidden" name="farmer_id" value="{{ f.id }}">
+                                    <button type="submit" class="px-3 py-1.5 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold border border-amber-300 transition">
+                                        Verify KYC (Demo)
+                                    </button>
+                                </form>
+                                {% endif %}
+                                <a href="{{ url_for('operator.book_slot', farmer_id=f.id) }}" class="px-3.5 py-1.5 rounded-lg bg-agri-700 hover:bg-agri-600 text-white font-bold transition shadow-sm">
+                                    Book Slot →
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="p-12 text-center">
+            <p class="text-3xl mb-2">🔍</p>
+            <h4 class="text-sm font-bold text-stone-800">No registered farmers found matching "{{ query }}"</h4>
+            <p class="text-xs text-stone-500 mt-1">Would you like to register this walk-in farmer right now?</p>
+            <a href="{{ url_for('operator.register_farmer') }}" class="inline-block mt-4 px-4 py-2 rounded-xl bg-agri-700 text-white font-bold text-xs">
+                + Register New Farmer
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

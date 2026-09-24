@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+
+{% block title %}My Bookings — KisanSetu{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-stone-900">My Procurement Bookings / मेरी बुकिंग</h1>
+            <p class="text-xs text-stone-500 mt-1">Review your historical and active slot booking passes.</p>
+        </div>
+        <a href="{{ url_for('farmer.book_slot') }}" class="px-4 py-2 rounded-xl bg-agri-700 hover:bg-agri-600 text-white text-xs font-bold shadow-sm transition">
+            + Book New Slot / नया स्लॉट बुक करें
+        </a>
+    </div>
+
+    <!-- Status Filters -->
+    <div class="flex flex-wrap gap-2 text-xs">
+        <a href="{{ url_for('farmer.bookings') }}" class="px-3 py-1.5 rounded-lg border font-medium {% if not current_filter %}bg-agri-700 text-white border-agri-700{% else %}bg-white text-stone-700 border-stone-300 hover:bg-stone-50{% endif %}">
+            All (सभी)
+        </a>
+        <a href="{{ url_for('farmer.bookings', status='Booked') }}" class="px-3 py-1.5 rounded-lg border font-medium {% if current_filter == 'Booked' %}bg-agri-700 text-white border-agri-700{% else %}bg-white text-stone-700 border-stone-300 hover:bg-stone-50{% endif %}">
+            Booked / बुक किया
+        </a>
+        <a href="{{ url_for('farmer.bookings', status='In Procurement') }}" class="px-3 py-1.5 rounded-lg border font-medium {% if current_filter == 'In Procurement' %}bg-agri-700 text-white border-agri-700{% else %}bg-white text-stone-700 border-stone-300 hover:bg-stone-50{% endif %}">
+            In Procurement / प्रक्रिया में
+        </a>
+        <a href="{{ url_for('farmer.bookings', status='Completed') }}" class="px-3 py-1.5 rounded-lg border font-medium {% if current_filter == 'Completed' %}bg-agri-700 text-white border-agri-700{% else %}bg-white text-stone-700 border-stone-300 hover:bg-stone-50{% endif %}">
+            Completed / पूर्ण
+        </a>
+    </div>
+
+    <!-- Bookings Table / List -->
+    {% if bookings %}
+    <div class="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-stone-200 text-sm">
+                <thead class="bg-stone-50 text-stone-600 text-xs uppercase font-bold tracking-wider">
+                    <tr>
+                        <th class="px-6 py-4 text-left">Token</th>
+                        <th class="px-6 py-4 text-left">Centre</th>
+                        <th class="px-6 py-4 text-left">Date &amp; Time</th>
+                        <th class="px-6 py-4 text-left">Crop &amp; Quantity</th>
+                        <th class="px-6 py-4 text-left">Status</th>
+                        <th class="px-6 py-4 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-200 text-stone-700">
+                    {% for b in bookings %}
+                    <tr class="hover:bg-stone-50/70 transition">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-base font-black text-agri-800">#{{ b.token_number }}</span>
+                            <span class="block text-[11px] text-stone-400">ID: #{{ b.id }}</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="font-bold text-stone-900 block">{{ b.centre.name }}</span>
+                            <span class="text-xs text-stone-500">{{ b.centre.location }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="font-semibold text-stone-800 block">{{ b.slot.slot_date.strftime('%d %b %Y') }}</span>
+                            <span class="text-xs text-stone-500">{{ b.slot.time_range_formatted }}</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="font-medium text-stone-800 block">{{ b.crop_type }}</span>
+                            <span class="text-xs text-stone-500">{{ b.estimated_quantity }} Quintals</span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2.5 py-1 rounded-full text-xs font-bold 
+                                {% if b.booking_status == 'Booked' %}bg-sky-100 text-sky-800 border border-sky-200
+                                {% elif b.booking_status == 'Arrived' %}bg-amber-100 text-amber-800 border border-amber-200
+                                {% elif b.booking_status == 'In Procurement' %}bg-indigo-100 text-indigo-800 border border-indigo-200
+                                {% elif b.booking_status == 'Completed' %}bg-emerald-100 text-emerald-800 border border-emerald-200
+                                {% else %}bg-stone-100 text-stone-600 border border-stone-200{% endif %}">
+                                {{ b.booking_status }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-xs">
+                            <div class="flex items-center justify-end space-x-2">
+                                <a href="{{ url_for('farmer.booking_detail', booking_id=b.id) }}" class="px-3 py-1.5 rounded-lg bg-agri-50 text-agri-800 hover:bg-agri-100 font-bold border border-agri-200 transition">
+                                    Token Slip
+                                </a>
+                                {% if b.can_be_cancelled %}
+                                <form method="POST" action="{{ url_for('farmer.cancel_booking', booking_id=b.id) }}" onsubmit="return confirm('Cancel this slot booking?');" class="inline">
+                                    <button type="submit" class="px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 font-bold border border-rose-200 transition">
+                                        Cancel
+                                    </button>
+                                </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="bg-white rounded-3xl p-12 text-center border border-stone-200">
+        <p class="text-stone-400 text-4xl mb-3">🎫</p>
+        <h3 class="text-base font-bold text-stone-800">No bookings found</h3>
+        <p class="text-xs text-stone-500 mt-1">You have not booked any procurement slots matching this criteria.</p>
+        <a href="{{ url_for('farmer.book_slot') }}" class="inline-block mt-4 px-4 py-2 rounded-xl bg-agri-700 text-white font-bold text-xs">
+            Book Your First Slot Now →
+        </a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

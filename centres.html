@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Procurement Centres — KisanSetu Admin{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-stone-900">Procurement Centres / खरीद केंद्र प्रबंधन</h1>
+            <p class="text-xs text-stone-500 mt-0.5">Manage government mandi facilities, capacities, and active operational states.</p>
+        </div>
+        <a href="{{ url_for('admin.dashboard') }}" class="text-xs font-semibold text-stone-500 hover:text-stone-800">
+            ← Admin Dashboard
+        </a>
+    </div>
+
+    <!-- Create Centre Form -->
+    <div class="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm">
+        <h3 class="text-sm font-bold uppercase tracking-wider text-agri-800 mb-4">+ Add New Procurement Centre</h3>
+        <form method="POST" action="{{ url_for('admin.centres') }}" class="space-y-4">
+            <input type="hidden" name="action" value="create">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-stone-700 mb-1">Centre Name *</label>
+                    <input type="text" name="name" required placeholder="e.g. Bilaspur Mandi Centre" class="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-stone-700 mb-1">Centre Code * (Unique)</label>
+                    <input type="text" name="code" required placeholder="e.g. BILASPUR-01" class="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs uppercase">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-stone-700 mb-1">Daily Capacity (Farmers)</label>
+                    <input type="number" name="daily_capacity" required value="100" class="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-stone-700 mb-1">Physical Location Address *</label>
+                    <input type="text" name="location" required placeholder="Near Grain Market Road" class="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-stone-700 mb-1">District *</label>
+                    <input type="text" name="district" required placeholder="Bilaspur" class="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-stone-700 mb-1">State *</label>
+                    <input type="text" name="state" required value="Chhattisgarh" class="w-full px-3 py-2 rounded-xl border border-stone-300 text-xs">
+                </div>
+            </div>
+
+            <div class="pt-2 text-right">
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-agri-700 hover:bg-agri-600 text-white font-bold text-xs shadow-sm transition">
+                    Save Procurement Centre
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Centres Table -->
+    <div class="bg-white rounded-3xl border border-stone-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-stone-200 text-xs">
+                <thead class="bg-stone-50 text-stone-600 uppercase font-bold text-left">
+                    <tr>
+                        <th class="px-6 py-3.5">Centre Name &amp; Code</th>
+                        <th class="px-6 py-3.5">Location</th>
+                        <th class="px-6 py-3.5">District / State</th>
+                        <th class="px-6 py-3.5">Daily Capacity</th>
+                        <th class="px-6 py-3.5">Operational Status</th>
+                        <th class="px-6 py-3.5 text-right">Manage</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-200 text-stone-700">
+                    {% for c in centres %}
+                    <tr class="hover:bg-stone-50 transition">
+                        <td class="px-6 py-4">
+                            <span class="font-bold text-stone-900 block text-sm">{{ c.name }}</span>
+                            <span class="font-mono text-stone-400 text-[11px]">{{ c.code }}</span>
+                        </td>
+                        <td class="px-6 py-4 text-stone-600">{{ c.location }}</td>
+                        <td class="px-6 py-4 text-stone-600">{{ c.district }}, {{ c.state }}</td>
+                        <td class="px-6 py-4 font-bold text-stone-800">
+                            {{ c.daily_capacity }} / day
+                        </td>
+                        <td class="px-6 py-4">
+                            <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold {% if c.is_active %}bg-emerald-100 text-emerald-800{% else %}bg-rose-100 text-rose-800{% endif %}">
+                                {{ 'Active' if c.is_active else 'Inactive' }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 text-right whitespace-nowrap">
+                            <form method="POST" action="{{ url_for('admin.centres') }}" class="inline">
+                                <input type="hidden" name="action" value="toggle">
+                                <input type="hidden" name="centre_id" value="{{ c.id }}">
+                                <button type="submit" class="px-3 py-1.5 rounded-lg border border-stone-300 hover:bg-stone-100 text-stone-700 font-semibold transition">
+                                    {{ 'Deactivate' if c.is_active else 'Activate' }}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

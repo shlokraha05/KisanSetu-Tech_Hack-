@@ -1,0 +1,70 @@
+/* KisanSetu Custom Government Agricultural Theme */
+:root {
+  --agri-dark: #143626;
+  --agri-primary: #1b4332;
+  --agri-secondary: #2d6a4f;
+  --agri-medium: #40916c;
+  --agri-light: #52b788;
+  --agri-accent: #74c69d;
+  --agri-pale: #d8f3dc;
+  --agri-cream: #fbf9f4;
+  --agri-card-bg: #ffffff;
+  --agri-border: #e2ded5;
+  --agri-text-dark: #1c2826;
+}
+
+body {
+  background-color: var(--agri-cream);
+  color: var(--agri-text-dark);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.bg-agri-primary {
+  background-color: var(--agri-primary);
+}
+
+.bg-agri-secondary {
+  background-color: var(--agri-secondary);
+}
+
+.text-agri-primary {
+  color: var(--agri-primary);
+}
+
+.text-agri-secondary {
+  color: var(--agri-secondary);
+}
+
+.border-agri {
+  border-color: var(--agri-border);
+}
+
+.gov-badge {
+  background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+}
+
+.token-pass-border {
+  border: 2px dashed #2d6a4f;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-token, #printable-token * {
+    visibility: visible;
+  }
+  #printable-token {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+    box-shadow: none;
+    border: 2px solid #000;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

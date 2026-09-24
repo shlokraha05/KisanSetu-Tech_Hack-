@@ -1,0 +1,263 @@
+{% extends 'base.html' %}
+
+{% block title %}Live Procurement Queue Board — KisanSetu{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+
+    <!-- Header & Centre Selector -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-stone-900">
+                Live Procurement Queue / प्रत्यक्ष कतार बोर्ड
+            </h1>
+            <p class="text-xs text-stone-500 mt-1">
+                Real-time queue tracking, calling next farmers to weighing stations, and updating arrival states.
+            </p>
+        </div>
+
+        <!-- Centre & Date Filters -->
+        <form method="GET" action="{{ url_for('operator.queue') }}" class="flex flex-wrap items-center gap-2">
+            <select name="centre_id" onchange="this.form.submit()" class="px-3 py-2 rounded-xl border border-stone-300 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-agri-600">
+                {% for c in centres %}
+                    <option value="{{ c.id }}" {% if selected_centre and selected_centre.id == c.id %}selected{% endif %}>
+                        {{ c.name }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <input 
+                type="date" 
+                name="date" 
+                value="{{ target_date.isoformat() }}" 
+                onchange="this.form.submit()"
+                class="px-3 py-2 rounded-xl border border-stone-300 text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-agri-600"
+            >
+        </form>
+    </div>
+
+    <!-- Active Stage & Call Next Button -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Currently in Procurement Hero Box -->
+        <div class="lg:col-span-2 bg-gradient-to-br from-agri-800 to-agri-700 text-white rounded-3xl p-6 sm:p-8 shadow-md border border-agri-600 flex flex-col justify-between">
+            <div class="flex items-center justify-between">
+                <span class="px-3 py-1 rounded-full text-xs font-bold bg-amber-400 text-amber-950 uppercase tracking-wider animate-pulse">
+                    Currently at Weighing Station / तौल केंद्र पर
+                </span>
+                <span class="text-xs text-agri-200">
+                    {{ selected_centre.name if selected_centre else '' }}
+                </span>
+            </div>
+
+            <div class="my-6">
+                {% if current_token %}
+                    <div class="flex items-baseline space-x-4">
+                        <span class="text-6xl sm:text-7xl font-black text-white">#{{ current_token.token_number }}</span>
+                        <div>
+                            <h3 class="text-2xl font-bold">{{ current_token.farmer.full_name }}</h3>
+                            <p class="text-xs text-agri-200">
+                                Mobile: {{ current_token.farmer.mobile }} | {{ current_token.farmer.village }}
+                            </p>
+                            <p class="text-xs text-agri-100 mt-1 font-semibold">
+                                Crop: {{ current_token.crop_type }} ({{ current_token.estimated_quantity }} Quintals)
+                            </p>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="py-6 text-center text-agri-200">
+                        <p class="text-4xl mb-2">⚖️</p>
+                        <p class="text-base font-bold text-white">No Farmer Currently in Weighing</p>
+                        <p class="text-xs text-agri-300 mt-1">Click "Call Next Farmer" below to advance the queue.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-agri-600/60">
+                <div class="text-xs text-agri-200">
+                    Date: <strong>{{ target_date.strftime('%d %B %Y') }}</strong> | Total Tokens: <strong>{{ total_count }}</strong>
+                </div>
+
+                <div class="flex gap-2">
+                    {% if current_token %}
+                        <form method="POST" action="{{ url_for('operator.update_queue') }}" class="inline">
+                            <input type="hidden" name="booking_id" value="{{ current_token.id }}">
+                            <input type="hidden" name="status" value="Completed">
+                            <button type="submit" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-agri-950 font-bold text-xs shadow-md transition">
+                                ✓ Mark Completed &amp; Trigger Payment
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if selected_centre %}
+                        <form method="POST" action="{{ url_for('operator.call_next') }}" class="inline">
+                            <input type="hidden" name="centre_id" value="{{ selected_centre.id }}">
+                            <input type="hidden" name="date" value="{{ target_date.isoformat() }}">
+                            <button type="submit" class="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-xs shadow-md transition flex items-center space-x-1">
+                                <span>📢 Call Next Farmer / अगला किसान</span>
+                                <span>→</span>
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Queue Quick Summary Card -->
+        <div class="bg-white rounded-3xl p-6 border border-stone-200 shadow-sm flex flex-col justify-between space-y-4">
+            <div>
+                <h3 class="text-sm font-bold uppercase tracking-wider text-stone-500 mb-3">Queue Summary</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-200">
+                        <span class="text-xs font-semibold text-amber-900">Waiting Farmers / प्रतीक्षारत</span>
+                        <span class="text-xl font-bold text-amber-900">{{ waiting_tokens|length }}</span>
+                    </div>
+
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                        <span class="text-xs font-semibold text-emerald-900">Completed Today / पूर्ण</span>
+                        <span class="text-xl font-bold text-emerald-900">{{ completed_tokens|length }}</span>
+                    </div>
+
+                    <div class="flex items-center justify-between p-3 rounded-xl bg-stone-50 border border-stone-200">
+                        <span class="text-xs font-semibold text-stone-700">Other (Cancelled / No Show)</span>
+                        <span class="text-xl font-bold text-stone-700">{{ other_tokens|length }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 bg-stone-50 rounded-xl text-[11px] text-stone-500 leading-relaxed border border-stone-200">
+                <strong>Operator Protocol:</strong> Farmers marked "Arrived" get priority in the queue over unattended "Booked" slots.
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Waiting Queue Table -->
+    <div class="bg-white rounded-3xl border border-stone-200 shadow-sm p-6">
+        <div class="flex items-center justify-between pb-4 border-b border-stone-200">
+            <div>
+                <h3 class="text-lg font-bold text-stone-900">Waiting Queue (In Line) / प्रतीक्षारत कतार</h3>
+                <p class="text-xs text-stone-500">Farmers queued for inspection and procurement today.</p>
+            </div>
+            <span class="px-3 py-1 rounded-full text-xs font-bold bg-stone-100 text-stone-700">
+                {{ waiting_tokens|length }} Waiting
+            </span>
+        </div>
+
+        {% if waiting_tokens %}
+        <div class="overflow-x-auto mt-4">
+            <table class="min-w-full divide-y divide-stone-200 text-xs">
+                <thead class="bg-stone-50 text-stone-600 uppercase font-bold tracking-wider">
+                    <tr>
+                        <th class="px-4 py-3 text-left">Token #</th>
+                        <th class="px-4 py-3 text-left">Farmer Name</th>
+                        <th class="px-4 py-3 text-left">Slot Window</th>
+                        <th class="px-4 py-3 text-left">Crop &amp; Quantity</th>
+                        <th class="px-4 py-3 text-left">Current Status</th>
+                        <th class="px-4 py-3 text-right">Transition Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-200 text-stone-700">
+                    {% for b in waiting_tokens %}
+                    <tr class="hover:bg-stone-50 transition">
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="text-base font-black text-agri-800">#{{ b.token_number }}</span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="font-bold text-stone-900 block">{{ b.farmer.full_name }}</span>
+                            <span class="text-stone-400 font-mono">{{ b.farmer.mobile }}</span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-stone-600">
+                            {{ b.slot.time_range_formatted }}
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap font-medium">
+                            {{ b.crop_type }} ({{ b.estimated_quantity }} qtl)
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold 
+                                {% if b.booking_status == 'Arrived' %}bg-amber-100 text-amber-800 border border-amber-300
+                                {% else %}bg-sky-100 text-sky-800 border border-sky-300{% endif %}">
+                                {{ b.booking_status }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-right">
+                            <div class="flex items-center justify-end space-x-1.5">
+                                {% if b.booking_status == 'Booked' %}
+                                    <form method="POST" action="{{ url_for('operator.update_queue') }}" class="inline">
+                                        <input type="hidden" name="booking_id" value="{{ b.id }}">
+                                        <input type="hidden" name="status" value="Arrived">
+                                        <button type="submit" class="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-sm">
+                                            Mark Arrived
+                                        </button>
+                                    </form>
+                                {% endif %}
+
+                                <form method="POST" action="{{ url_for('operator.update_queue') }}" class="inline">
+                                    <input type="hidden" name="booking_id" value="{{ b.id }}">
+                                    <input type="hidden" name="status" value="In Procurement">
+                                    <button type="submit" class="px-2.5 py-1 rounded-lg bg-agri-700 hover:bg-agri-600 text-white font-bold text-xs shadow-sm">
+                                        Call for Weighing
+                                    </button>
+                                </form>
+
+                                <form method="POST" action="{{ url_for('operator.update_queue') }}" class="inline">
+                                    <input type="hidden" name="booking_id" value="{{ b.id }}">
+                                    <input type="hidden" name="status" value="No Show">
+                                    <button type="submit" class="px-2 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-600 font-semibold text-xs">
+                                        No Show
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-xs text-stone-400 py-8 text-center">No waiting tokens in line for this date.</p>
+        {% endif %}
+    </div>
+
+    <!-- Completed Procurements Table -->
+    {% if completed_tokens %}
+    <div class="bg-white rounded-3xl border border-stone-200 shadow-sm p-6">
+        <h3 class="text-base font-bold text-stone-900 mb-3 flex items-center gap-2">
+            <span>✓</span>
+            <span>Completed Procurements Today ({{ completed_tokens|length }})</span>
+        </h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-stone-200 text-xs">
+                <thead class="bg-stone-50 text-stone-600 uppercase font-bold tracking-wider">
+                    <tr>
+                        <th class="px-4 py-2.5 text-left">Token #</th>
+                        <th class="px-4 py-2.5 text-left">Farmer</th>
+                        <th class="px-4 py-2.5 text-left">Crop &amp; Qty</th>
+                        <th class="px-4 py-2.5 text-left">MSP Amount</th>
+                        <th class="px-4 py-2.5 text-left">Payment Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-stone-200 text-stone-700">
+                    {% for b in completed_tokens %}
+                    <tr>
+                        <td class="px-4 py-2.5 font-bold text-agri-800">#{{ b.token_number }}</td>
+                        <td class="px-4 py-2.5 font-semibold text-stone-800">{{ b.farmer.full_name }} ({{ b.farmer.mobile }})</td>
+                        <td class="px-4 py-2.5">{{ b.crop_type }} ({{ b.estimated_quantity }} qtl)</td>
+                        <td class="px-4 py-2.5 font-bold text-emerald-800">
+                            ₹{{ "{:,.2f}".format(b.payment.amount if b.payment else 0) }}
+                        </td>
+                        <td class="px-4 py-2.5">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
+                                {{ b.payment.payment_status if b.payment else 'Completed' }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

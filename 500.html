@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}500 Server Error — KisanSetu{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto text-center py-16">
+    <span class="text-6xl block mb-4">⚠️</span>
+    <h1 class="text-3xl font-black text-stone-900">500 — Server Encountered Error</h1>
+    <p class="text-sm text-stone-600 mt-2">The system encountered an unexpected condition while processing your request.</p>
+    <a href="{{ url_for('index') }}" class="inline-block mt-6 px-5 py-2.5 rounded-xl bg-agri-700 text-white font-bold text-xs shadow-md">
+        Return to Safety / मुख्य पृष्ठ
+    </a>
+</div>
+{% endblock %}

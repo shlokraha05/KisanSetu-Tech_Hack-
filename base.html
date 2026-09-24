@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}KisanSetu — Agricultural Procurement & Slot Management{% endblock %}</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        agri: {
+                            900: '#143626',
+                            800: '#1b4332',
+                            700: '#2d6a4f',
+                            600: '#40916c',
+                            500: '#52b788',
+                            400: '#74c69d',
+                            200: '#b7e4c7',
+                            100: '#d8f3dc',
+                            50: '#f2f9f5'
+                        },
+                        cream: {
+                            50: '#fdfbf7',
+                            100: '#f7f4ec',
+                            200: '#eee8da'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom Theme Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/custom.css') }}">
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-[#fcfaf6] text-stone-800 min-h-screen flex flex-col antialiased">
+
+    <!-- Top Demo Banner (SIH Prototype Disclaimer) -->
+    {% if demo_mode %}
+    <aside aria-label="Demo notice" class="bg-amber-500 text-stone-900 px-4 py-1.5 text-xs font-semibold text-center border-b border-amber-600 flex items-center justify-center gap-2 shadow-sm no-print">
+        <span class="inline-flex items-center px-2 py-0.5 rounded bg-black text-amber-300 text-[11px] uppercase tracking-wider font-bold">
+            SIH Prototype — Demo Mode
+        </span>
+        <span>
+            Simulated Aadhaar Identity Verification &amp; Mock SMS Service. Not connected to live government procurement or UIDAI.
+        </span>
+        <span class="hidden md:inline text-amber-950 font-normal">
+            | DB Engine: <strong class="font-semibold">{{ database_engine }}</strong>
+        </span>
+    </aside>
+    {% endif %}
+
+    <!-- Main Navigation Header -->
+    <header class="bg-agri-800 text-white shadow-md border-b-4 border-agri-600 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                
+                <!-- Brand / Logo -->
+                <div class="flex items-center space-x-3">
+                    <a href="{{ url_for('index') }}" class="flex items-center space-x-3 group">
+                        <div class="w-12 h-12 rounded-xl bg-agri-700 border border-agri-500 flex items-center justify-center shadow-inner group-hover:bg-agri-600 transition">
+                            <span class="text-2xl" role="img" aria-label="Sprout">🌾</span>
+                        </div>
+                        <div>
+                            <div class="flex items-baseline space-x-2">
+                                <span class="text-2xl font-black tracking-tight text-white">KisanSetu</span>
+                                <span class="text-sm font-semibold text-agri-300">किसान सेतु</span>
+                            </div>
+                            <p class="text-xs text-agri-200 font-medium tracking-wide">Simple. Accessible. Farmer First.</p>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Right Nav Elements -->
+                <nav class="flex items-center space-x-2 sm:space-x-4">
+                    {% if current_user.is_authenticated %}
+                        <!-- Role Badge -->
+                        <div class="hidden sm:flex flex-col text-right mr-2">
+                            <span class="text-xs font-medium text-agri-200">{{ current_user.name }}</span>
+                            <span class="text-[11px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-agri-700 text-agri-200 border border-agri-600 self-end">
+                                {{ current_user.role }}
+                            </span>
+                        </div>
+
+                        <!-- Navigation per role -->
+                        {% if current_user.is_farmer() %}
+                            <a href="{{ url_for('farmer.dashboard') }}" class="px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-agri-700 transition">
+                                Dashboard / डैशबोर्ड
+                            </a>
+                            <a href="{{ url_for('farmer.book_slot') }}" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-agri-600 hover:bg-agri-500 transition shadow-sm">
+                                Book Slot / स्लॉट बुक करें
+                            </a>
+                            <a href="{{ url_for('farmer.bookings') }}" class="hidden md:inline-block px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-agri-700 transition">
+                                My Bookings / मेरी बुकिंग
+                            </a>
+                            <a href="{{ url_for('farmer.sms_inbox') }}" class="px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-agri-700 transition relative">
+                                SMS Inbox / एसएमएस
+                            </a>
+                        {% elif current_user.is_operator() or current_user.is_csc() %}
+                            <a href="{{ url_for('operator.dashboard') }}" class="px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-agri-700 transition">
+                                Operator Portal
+                            </a>
+                            <a href="{{ url_for('operator.register_farmer') }}" class="px-3 py-1.5 rounded-lg text-sm font-medium bg-agri-600 hover:bg-agri-500 transition shadow-sm">
+                                + Register Farmer
+                            </a>
+                            <a href="{{ url_for('operator.queue') }}" class="px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-agri-700 transition">
+                                Live Queue / कतार
+                            </a>
+                            <a href="{{ url_for('operator.sms_logs') }}" class="hidden md:inline-block px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-agri-700 transition">
+                                SMS Logs
+                            </a>
+                        {% elif current_user.is_admin() %}
+                            <a href="{{ url_for('admin.dashboard') }}" class="px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-agri-700 transition">
+                                Admin Dashboard
+                            </a>
+                            <a href="{{ url_for('admin.centres') }}" class="hidden md:inline-block px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-agri-700 transition">
+                                Centres
+                            </a>
+                            <a href="{{ url_for('admin.slots') }}" class="hidden md:inline-block px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-agri-700 transition">
+                                Slots
+                            </a>
+                            <a href="{{ url_for('admin.bookings') }}" class="px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-agri-700 transition">
+                                Bookings
+                            </a>
+                        {% endif %}
+
+                        <a href="{{ url_for('auth.logout') }}" class="ml-2 px-3 py-1.5 text-xs font-semibold rounded-lg bg-stone-900/60 hover:bg-stone-900 text-stone-200 border border-stone-700 transition">
+                            Logout
+                        </a>
+                    {% else %}
+                        <a href="{{ url_for('auth.login', role='farmer') }}" class="px-3.5 py-1.5 text-sm font-medium rounded-lg hover:bg-agri-700 transition">
+                            Farmer Login / किसान
+                        </a>
+                        <a href="{{ url_for('auth.login', role='operator') }}" class="px-3.5 py-1.5 text-sm font-medium rounded-lg hover:bg-agri-700 transition">
+                            Operator / ऑपरेटर
+                        </a>
+                        <a href="{{ url_for('auth.login', role='admin') }}" class="px-3.5 py-1.5 text-sm font-medium rounded-lg bg-agri-700 hover:bg-agri-600 transition border border-agri-500">
+                            Admin Login
+                        </a>
+                    {% endif %}
+                </nav>
+
+            </div>
+        </div>
+    </header>
+
+    <!-- Flash Notifications -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full no-print">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="auto-dismiss-alert mb-3 p-4 rounded-xl border flex items-start justify-between shadow-sm transition-all {% if category == 'success' %}bg-emerald-50 border-emerald-300 text-emerald-900{% elif category == 'danger' %}bg-rose-50 border-rose-300 text-rose-900{% elif category == 'warning' %}bg-amber-50 border-amber-300 text-amber-900{% else %}bg-sky-50 border-sky-300 text-sky-900{% endif %}">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-xl">
+                                {% if category == 'success' %}✓{% elif category == 'danger' %}⚠{% elif category == 'warning' %}!{% else %}ℹ{% endif %}
+                            </span>
+                            <span class="text-sm font-medium">{{ message }}</span>
+                        </div>
+                        <button onclick="this.parentElement.remove()" class="text-xs font-bold opacity-60 hover:opacity-100">&times;</button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content Block -->
+    <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Accessible Government Footer -->
+    <footer class="bg-stone-900 text-stone-300 border-t-4 border-agri-700 pt-10 pb-8 text-sm mt-12 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-3">
+                        <span class="text-2xl">🌾</span>
+                        <span class="text-xl font-bold text-white">KisanSetu</span>
+                    </div>
+                    <p class="text-stone-400 text-xs leading-relaxed mb-3">
+                        Omni-channel agricultural procurement &amp; slot management system ensuring accessible MSP procurement for every farmer.
+                    </p>
+                    <p class="text-xs text-agri-400 font-semibold">
+                        "Technology should adapt to the farmer — the farmer should not have to adapt to technology."
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-white mb-3 text-sm uppercase tracking-wider">Assisted Channels</h4>
+                    <ul class="space-x-0 space-y-1.5 text-xs text-stone-400">
+                        <li>• Help Desk Operator Portal</li>
+                        <li>• CSC Village Assistance Booths</li>
+                        <li>• Touch-friendly Self Service Kiosks</li>
+                        <li>• Interactive Voice Response (IVR - Future)</li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-white mb-3 text-sm uppercase tracking-wider">Demo Credentials</h4>
+                    <div class="bg-stone-800/80 p-3 rounded-lg text-xs font-mono border border-stone-700 space-y-1 text-stone-300">
+                        <div>Admin: <span class="text-emerald-400">admin@kisansetu.demo</span> / Admin@123</div>
+                        <div>Operator: <span class="text-emerald-400">operator@kisansetu.demo</span> / Operator@123</div>
+                        <div>Farmer: <span class="text-emerald-400">farmer@kisansetu.demo</span> / Farmer@123</div>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-white mb-3 text-sm uppercase tracking-wider">Compliance &amp; Safety</h4>
+                    <p class="text-xs text-stone-400 leading-relaxed">
+                        This application is a Smart India Hackathon (SIH) prototype. No live Aadhaar biometric or UIDAI integrations are used. All SMS delivery events and payment transfers are simulated safely.
+                    </p>
+                </div>
+            </div>
+
+            <div class="border-t border-stone-800 pt-6 flex flex-col md:flex-row justify-between items-center text-xs text-stone-500">
+                <p>&copy; {{ current_year }} KisanSetu — Government Agricultural Procurement Management Simulation.</p>
+                <p class="mt-2 md:mt-0">Built for Smart India Hackathon (SIH)</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Core Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

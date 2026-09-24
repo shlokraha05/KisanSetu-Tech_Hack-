@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+
+{% block title %}Procurement Token #{{ booking.token_number }} — KisanSetu{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto py-4">
+
+    <!-- Top Action Bar (hidden in print) -->
+    <div class="flex items-center justify-between mb-4 no-print">
+        <a href="{{ url_for('farmer.bookings') }}" class="text-xs font-bold text-stone-500 hover:text-stone-800">
+            ← Back to My Bookings
+        </a>
+        <div class="flex space-x-2">
+            <button onclick="window.print()" class="px-4 py-2 rounded-xl bg-agri-700 hover:bg-agri-600 text-white font-bold text-xs shadow-sm flex items-center space-x-1 transition">
+                <span>🖨️ Print Token Pass / प्रिंट करें</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Printable Token Pass Slip -->
+    <div id="printable-token" class="bg-white rounded-3xl p-8 border-2 border-agri-700 shadow-lg relative overflow-hidden">
+        
+        <!-- Header -->
+        <div class="border-b-2 border-stone-800 pb-4 mb-6 text-center">
+            <div class="flex items-center justify-center space-x-2 mb-1">
+                <span class="text-2xl">🌾</span>
+                <span class="text-xl font-black tracking-tight text-agri-900">KisanSetu / किसान सेतु</span>
+            </div>
+            <p class="text-xs font-bold uppercase tracking-widest text-stone-600">
+                Official Agricultural Procurement Token Pass / आधिकारिक खरीद टोकन पर्ची
+            </p>
+            <p class="text-[11px] text-stone-400">
+                Issued under National Agricultural Procurement Guidelines • SIH Prototype Simulation
+            </p>
+        </div>
+
+        <!-- Token Number Hero Box -->
+        <div class="bg-agri-50 border-2 border-dashed border-agri-600 rounded-2xl p-6 text-center mb-6">
+            <span class="text-xs font-bold uppercase tracking-wider text-agri-800">Allocated Token Number / आवंटित टोकन नंबर</span>
+            <div class="text-6xl font-black text-agri-800 my-1">
+                #{{ booking.token_number }}
+            </div>
+            <div class="flex items-center justify-center space-x-3 text-xs font-semibold mt-2">
+                <span class="px-3 py-0.5 rounded-full bg-agri-700 text-white">
+                    Status: {{ booking.booking_status }}
+                </span>
+                <span class="text-stone-600 font-mono">
+                    Booking ID: #{{ booking.id }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Details Grid -->
+        <div class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm py-4 border-t border-b border-stone-200">
+            
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-stone-400 block">Farmer Name / किसान का नाम</span>
+                <span class="font-bold text-stone-900 text-base">{{ booking.farmer.full_name }}</span>
+                <span class="block text-xs text-stone-500">Mob: {{ booking.farmer.mobile }}</span>
+            </div>
+
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-stone-400 block">Procurement Centre / खरीद केंद्र</span>
+                <span class="font-bold text-stone-900 text-base">{{ booking.centre.name }}</span>
+                <span class="block text-xs text-stone-500">{{ booking.centre.location }} ({{ booking.centre.code }})</span>
+            </div>
+
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-stone-400 block">Date of Procurement / तारीख</span>
+                <span class="font-extrabold text-agri-800 text-base">{{ booking.slot.slot_date.strftime('%d %B %Y') }}</span>
+            </div>
+
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-stone-400 block">Time Slot Window / समय</span>
+                <span class="font-extrabold text-agri-800 text-base">{{ booking.slot.time_range_formatted }}</span>
+            </div>
+
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-stone-400 block">Crop Type / फसल</span>
+                <span class="font-bold text-stone-800">{{ booking.crop_type }}</span>
+            </div>
+
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-stone-400 block">Estimated Quantity / मात्रा</span>
+                <span class="font-bold text-stone-800">{{ booking.estimated_quantity }} Quintals (कुंतल)</span>
+            </div>
+
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-stone-400 block">Est. MSP Amount / अनुमानित मूल्य</span>
+                <span class="font-bold text-emerald-800 text-base">
+                    ₹{{ "{:,.2f}".format(booking.payment.amount if booking.payment else 0) }}
+                </span>
+            </div>
+
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-stone-400 block">Payment Reference / संदर्भ</span>
+                <span class="font-mono text-xs text-stone-700">
+                    {{ booking.payment.payment_reference if booking.payment else 'PENDING' }}
+                </span>
+            </div>
+
+        </div>
+
+        <!-- Mock Barcode / Security Box -->
+        <div class="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+            <div class="border-2 border-stone-800 p-2 rounded-lg bg-stone-50 text-center w-28 h-28 flex flex-col items-center justify-center">
+                <span class="text-4xl">🏁</span>
+                <span class="text-[9px] font-mono mt-1 text-stone-600">SECURE-TOKEN</span>
+            </div>
+
+            <div class="text-xs text-stone-600 flex-grow leading-relaxed">
+                <p class="font-bold text-stone-800 mb-1">Important Instructions for Arrival / महत्वपूर्ण निर्देश:</p>
+                <ul class="list-disc list-inside space-y-0.5 text-[11px]">
+                    <li>Present this slip or SMS confirmation to the gate security at {{ booking.centre.name }}.</li>
+                    <li>Please arrive 15 minutes prior to your allocated window: {{ booking.slot.time_range_formatted }}.</li>
+                    <li>Payment will be processed directly into your registered bank account after weighing.</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Footer Disclaimer -->
+        <div class="mt-8 pt-4 border-t border-stone-200 text-center text-[10px] text-stone-400">
+            System Generated Token Pass • KisanSetu Smart India Hackathon Prototype • No Physical Signature Required
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+
+{% block title %}Farmer Profile — KisanSetu{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-4 space-y-6">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-bold text-stone-900">Farmer Profile / किसान प्रोफ़ाइल</h1>
+            <p class="text-xs text-stone-500 mt-0.5">Registered details, land records, and identity verification status.</p>
+        </div>
+        <a href="{{ url_for('farmer.dashboard') }}" class="text-xs font-semibold text-stone-500 hover:text-stone-800">
+            ← Dashboard
+        </a>
+    </div>
+
+    <!-- Identity Verification Card -->
+    <div class="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-stone-200">
+            <div>
+                <span class="text-xs font-bold uppercase tracking-wider text-stone-400">Simulated Aadhaar KYC</span>
+                <h2 class="text-xl font-bold text-stone-900 mt-1">Identity Verification Status</h2>
+                <p class="text-xs text-stone-500 mt-0.5">Simulation for Smart India Hackathon prototype demonstration.</p>
+            </div>
+            <div>
+                {% if farmer.identity_status == 'Verified (Demo)' %}
+                    <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        ✓ Verified (Demo) / सत्यापित
+                    </span>
+                {% elif farmer.identity_status == 'Failed (Demo)' %}
+                    <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold bg-rose-100 text-rose-800 border border-rose-300">
+                        ✕ Failed (Demo)
+                    </span>
+                {% else %}
+                    <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                        ⏳ Pending / लंबित
+                    </span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="py-4 text-xs text-stone-600 space-y-2">
+            <p class="p-3 bg-stone-50 rounded-xl border border-stone-200 text-stone-600 leading-relaxed">
+                <strong>UIDAI Simulation Notice:</strong> {{ aadhaar_disclaimer }}
+            </p>
+            
+            {% if farmer.identity_status != 'Verified (Demo)' %}
+            <div class="pt-2">
+                <form method="POST" action="{{ url_for('farmer.verify_identity') }}">
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-agri-700 hover:bg-agri-600 text-white font-bold text-xs shadow-md transition">
+                        Run Demo Identity Verification (सिम्युलेट करें) →
+                    </button>
+                </form>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Verification History -->
+        {% if verifications %}
+        <div class="mt-4 pt-4 border-t border-stone-200">
+            <h4 class="text-xs font-bold uppercase tracking-wider text-stone-700 mb-2">Verification Logs</h4>
+            <div class="space-y-2 text-xs">
+                {% for v in verifications %}
+                <div class="flex items-center justify-between p-2.5 rounded-lg bg-stone-50 border border-stone-200">
+                    <span class="font-mono text-stone-800">Ref: {{ v.demo_reference }} ({{ v.verification_mode }})</span>
+                    <div class="flex items-center space-x-3">
+                        <span class="font-semibold text-emerald-700">{{ v.verification_status }}</span>
+                        <span class="text-stone-400 text-[11px]">{{ v.verified_at.strftime('%d %b %Y, %I:%M %p') }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Personal & Agricultural Details -->
+    <div class="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm">
+        <h3 class="text-lg font-bold text-stone-900 mb-4">Farmer Details / किसान विवरण</h3>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+            <div>
+                <span class="text-xs text-stone-400 uppercase font-semibold block">Full Name</span>
+                <span class="font-bold text-stone-800">{{ farmer.full_name }}</span>
+            </div>
+            <div>
+                <span class="text-xs text-stone-400 uppercase font-semibold block">Registered Mobile</span>
+                <span class="font-bold text-stone-800">{{ farmer.mobile }}</span>
+            </div>
+            <div>
+                <span class="text-xs text-stone-400 uppercase font-semibold block">Village / ग्राम</span>
+                <span class="font-semibold text-stone-800">{{ farmer.village }}</span>
+            </div>
+            <div>
+                <span class="text-xs text-stone-400 uppercase font-semibold block">District &amp; State</span>
+                <span class="font-semibold text-stone-800">{{ farmer.district }}, {{ farmer.state }}</span>
+            </div>
+            <div>
+                <span class="text-xs text-stone-400 uppercase font-semibold block">Primary Crop / मुख्य फसल</span>
+                <span class="font-semibold text-agri-800">{{ farmer.crop_type }}</span>
+            </div>
+            <div>
+                <span class="text-xs text-stone-400 uppercase font-semibold block">Land Area / भूमि</span>
+                <span class="font-semibold text-stone-800">{{ farmer.land_area }} Acres (एकड़)</span>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
